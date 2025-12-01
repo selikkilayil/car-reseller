@@ -62,8 +62,7 @@ export const expenseSchema = z.object({
 
 export const saleSchema = z.object({
   carId: z.string().min(1),
-  netRate: z.coerce.number().min(0),
-  salePrice: z.coerce.number().min(0),
+  salePrice: z.coerce.number().min(0, 'Sale price is required'),
   salePartyId: z.string().min(1, 'Buyer is required'),
   saleBrokerId: z.string().optional().or(z.literal('')).transform(val => val || undefined),
   saleBrokerage: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),

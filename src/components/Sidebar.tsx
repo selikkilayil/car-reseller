@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Car, Users, CreditCard, Wrench, LayoutDashboard, Menu, X } from 'lucide-react'
+import { Car, Users, CreditCard, Wrench, LayoutDashboard, Menu, X, Receipt } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/cars', label: 'Cars', icon: Car },
   { href: '/parties', label: 'Parties', icon: Users },
   { href: '/accounts', label: 'Accounts', icon: CreditCard },
+  { href: '/transactions', label: 'Transactions', icon: Receipt },
   { href: '/repair-types', label: 'Repair Types', icon: Wrench },
 ]
 

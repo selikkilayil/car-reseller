@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { RepairForm } from '@/components/forms/RepairForm'
 import { ExpenseForm } from '@/components/forms/ExpenseForm'
 import { SaleForm } from '@/components/forms/SaleForm'
+import { ReadyForSaleForm } from '@/components/forms/ReadyForSaleForm'
 import { patchData } from '@/hooks/useData'
 import { Plus, Wrench, DollarSign, ShoppingCart, Truck } from 'lucide-react'
 
@@ -25,7 +26,7 @@ const statusColors: Record<string, 'default' | 'warning' | 'info' | 'success' | 
 }
 
 export function CarDetail({ car, onUpdate }: CarDetailProps) {
-  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | null>(null)
+  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | null>(null)
 
   const updateStatus = async (status: string) => {
     await patchData(`/api/cars/${car.id}/status`, { status })
@@ -55,7 +56,7 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
             </Button>
           )}
           {car.status === 'IN_REPAIR' && (
-            <Button size="sm" onClick={() => updateStatus('READY_FOR_SALE')} className="flex-1 sm:flex-none">
+            <Button size="sm" onClick={() => setModal('ready-for-sale')} className="flex-1 sm:flex-none">
               <ShoppingCart className="w-4 h-4 mr-1" /> Mark Ready for Sale
             </Button>
           )}
@@ -77,6 +78,7 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
           <TabsTrigger value="purchase" className="whitespace-nowrap">Purchase</TabsTrigger>
           <TabsTrigger value="repairs" className="whitespace-nowrap">Repairs ({car.repairs?.length || 0})</TabsTrigger>
           <TabsTrigger value="sale" className="whitespace-nowrap">Sale</TabsTrigger>
+          <TabsTrigger value="transactions" className="whitespace-nowrap">Transactions ({car.transactions?.length || 0})</TabsTrigger>
           <TabsTrigger value="summary" className="whitespace-nowrap">Summary</TabsTrigger>
         </TabsList>
 
@@ -185,6 +187,36 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
           )}
         </TabsContent>
 
+        <TabsContent value="transactions">
+          <div className="space-y-2">
+            {car.transactions?.length > 0 ? (
+              car.transactions.map((txn: any) => (
+                <div key={txn.id} className="flex flex-col sm:flex-row justify-between p-3 bg-gray-50 rounded gap-2">
+                  <div className="text-sm">
+                    <div className="flex gap-2 items-center mb-1">
+                      <span className={`font-medium ${txn.type === 'DEBIT' ? 'text-red-600' : 'text-green-600'}`}>
+                        {txn.purpose}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(txn.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-gray-600">{txn.description || '-'}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {txn.bankAccount ? `${txn.bankAccount.name} (${txn.bankAccount.bankName})` : 'Cash'}
+                    </p>
+                  </div>
+                  <div className={`text-lg font-bold ${txn.type === 'DEBIT' ? 'text-red-600' : 'text-green-600'}`}>
+                    {txn.type === 'DEBIT' ? '-' : '+'}{formatCurrency(txn.amount)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm">No transactions yet</p>
+            )}
+          </div>
+        </TabsContent>
+
         <TabsContent value="summary">
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg text-sm sm:text-base">
@@ -196,6 +228,13 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
               <div className="sm:col-span-2 border-t pt-2">
                 <span className="text-gray-500">Total Cost:</span> <span className="font-bold text-base sm:text-lg">{formatCurrency(car.summary?.totalCost)}</span>
               </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-blue-50 rounded-lg text-sm sm:text-base">
+              <div><span className="text-gray-500">Days Since Purchase:</span> <span className="font-medium">{car.summary?.daysSincePurchase || 0} days</span></div>
+              {car.summary?.repairDays !== null && car.summary?.repairDays !== undefined && (
+                <div><span className="text-gray-500">Days in Repair:</span> <span className="font-medium text-orange-600">{car.summary.repairDays} days</span></div>
+              )}
             </div>
             
             {car.salePrice && (
@@ -228,8 +267,12 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
         <ExpenseForm carId={car.id} category="SALE" onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
       </Modal>
       
+      <Modal isOpen={modal === 'ready-for-sale'} onClose={() => setModal(null)} title="Mark Ready for Sale">
+        <ReadyForSaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+      </Modal>
+      
       <Modal isOpen={modal === 'sale'} onClose={() => setModal(null)} title="Record Sale">
-        <SaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+        <SaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} netRate={car.netRate} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
       </Modal>
     </div>
   )

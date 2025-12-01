@@ -17,7 +17,13 @@ interface Car {
   registrationNo?: string
   status: string
   purchasePrice: number
+  purchaseDate: string
   purchaseParty?: { name: string }
+  summary?: {
+    totalExpenses: number
+    daysSincePurchase: number
+    repairDays: number | null
+  }
 }
 
 const statusVariants: Record<string, 'default' | 'warning' | 'info' | 'success'> = {
@@ -68,6 +74,8 @@ export default function CarsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registration</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
               </thead>
@@ -82,6 +90,15 @@ export default function CarsPage() {
                     <td className="px-6 py-4 text-gray-500">{car.registrationNo || '-'}</td>
                     <td className="px-6 py-4 text-gray-500">{car.purchaseParty?.name || '-'}</td>
                     <td className="px-6 py-4">{formatCurrency(car.purchasePrice)}</td>
+                    <td className="px-6 py-4 text-gray-500">{formatCurrency(car.summary?.totalExpenses || 0)}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      <div className="text-sm">
+                        <div>{car.summary?.daysSincePurchase || 0}d</div>
+                        {car.summary?.repairDays !== null && car.summary?.repairDays !== undefined && (
+                          <div className="text-xs text-orange-600">Repair: {car.summary.repairDays}d</div>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <Badge variant={statusVariants[car.status]}>{car.status.replace('_', ' ')}</Badge>
                     </td>
@@ -112,6 +129,13 @@ export default function CarsPage() {
                   <div>Registration: {car.registrationNo || '-'}</div>
                   <div>Seller: {car.purchaseParty?.name || '-'}</div>
                   <div className="font-medium text-gray-900 mt-2">{formatCurrency(car.purchasePrice)}</div>
+                  <div className="text-xs mt-2 flex gap-3">
+                    <span>Expenses: {formatCurrency(car.summary?.totalExpenses || 0)}</span>
+                    <span>Days: {car.summary?.daysSincePurchase || 0}d</span>
+                    {car.summary?.repairDays !== null && car.summary?.repairDays !== undefined && (
+                      <span className="text-orange-600">Repair: {car.summary.repairDays}d</span>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))}

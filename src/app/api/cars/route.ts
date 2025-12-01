@@ -19,7 +19,43 @@ export async function GET(req: Request) {
     },
     orderBy: { createdAt: 'desc' },
   })
-  return NextResponse.json(cars)
+  
+  // Add summary data for each car
+  const carsWithSummary = cars.map(car => {
+    const totalExpenses = car.expenses.reduce((sum, e) => sum + e.amount, 0)
+    const repairTotal = car.repairs.reduce((sum, r) => sum + r.cost, 0)
+    
+    // Calculate days since purchase
+    const daysSincePurchase = Math.floor(
+      (Date.now() - new Date(car.purchaseDate).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    
+    // Calculate repair days if car went through repair
+    let repairDays = null
+    if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'SOLD' || car.status === 'DELIVERED') {
+      // Find first repair date and ready for sale date
+      const firstRepair = car.repairs.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0]
+      
+      if (firstRepair) {
+        const repairStartDate = new Date(firstRepair.createdAt)
+        const repairEndDate = car.readyForSaleDate ? new Date(car.readyForSaleDate) : new Date()
+        repairDays = Math.floor((repairEndDate.getTime() - repairStartDate.getTime()) / (1000 * 60 * 60 * 24))
+      }
+    }
+    
+    return {
+      ...car,
+      summary: {
+        totalExpenses: totalExpenses + repairTotal,
+        daysSincePurchase,
+        repairDays,
+      }
+    }
+  })
+  
+  return NextResponse.json(carsWithSummary)
 }
 
 export async function POST(req: Request) {

@@ -31,6 +31,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const totalCost = purchaseTotal + repairTotal + purchaseExpenses + repairExpenses + (car.brokerageAmount || 0)
   const profit = car.salePrice ? car.salePrice - totalCost - saleExpenses - (car.saleBrokerage || 0) : null
   
+  // Calculate days since purchase
+  const daysSincePurchase = Math.floor(
+    (Date.now() - new Date(car.purchaseDate).getTime()) / (1000 * 60 * 60 * 24)
+  )
+  
+  // Calculate repair days if car went through repair
+  let repairDays = null
+  if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'SOLD' || car.status === 'DELIVERED') {
+    const firstRepair = car.repairs.sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )[0]
+    
+    if (firstRepair) {
+      const repairStartDate = new Date(firstRepair.createdAt)
+      const repairEndDate = car.readyForSaleDate ? new Date(car.readyForSaleDate) : new Date()
+      repairDays = Math.floor((repairEndDate.getTime() - repairStartDate.getTime()) / (1000 * 60 * 60 * 24))
+    }
+  }
+  
   return NextResponse.json({
     ...car,
     summary: {
@@ -41,6 +60,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       saleExpenses,
       totalCost,
       profit,
+      daysSincePurchase,
+      repairDays,
     },
   })
 }

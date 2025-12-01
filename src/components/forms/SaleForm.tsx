@@ -14,11 +14,12 @@ interface BankAccount { id: string; name: string; bankName: string }
 interface Props {
   carId: string
   totalCost: number
+  netRate?: number
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function SaleForm({ carId, totalCost, onSuccess, onCancel }: Props) {
+export function SaleForm({ carId, totalCost, netRate, onSuccess, onCancel }: Props) {
   const { data: parties } = useFetch<Party[]>('/api/parties')
   const { data: banks } = useFetch<BankAccount[]>('/api/bank-accounts')
   
@@ -41,15 +42,20 @@ export function SaleForm({ carId, totalCost, onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="p-3 sm:p-4 bg-blue-50 rounded-lg text-sm">
+      <div className="p-3 sm:p-4 bg-blue-50 rounded-lg text-sm space-y-1">
         <p className="text-blue-800">Total Cost: <span className="font-bold">{formatCurrency(totalCost)}</span></p>
+        {netRate && <p className="text-blue-800">Net Rate: <span className="font-bold">{formatCurrency(netRate)}</span></p>}
         <p className="text-blue-800">Estimated Profit: <span className={`font-bold ${estimatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(estimatedProfit)}</span></p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input label="Net Rate" type="number" {...register('netRate')} error={errors.netRate?.message} />
-        <Input label="Sale Price" type="number" {...register('salePrice')} error={errors.salePrice?.message} />
-      </div>
+      <Input 
+        label="Selling Price" 
+        type="number" 
+        step="0.01"
+        placeholder="Enter the final selling price"
+        {...register('salePrice')} 
+        error={errors.salePrice?.message} 
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select

@@ -81,8 +81,9 @@ model Car {
   amountPaidToSeller Float?   // What we actually paid
   
   // Sale details (filled when sold)
+  readyForSaleDate DateTime?  // When marked ready for sale
+  netRate         Float?      // Base rate (set when ready for sale)
   saleDate        DateTime?
-  netRate         Float?      // Base rate
   salePrice       Float?      // Final price
   salePartyId     String?
   saleParty       Party?      @relation("SaleParty", fields: [salePartyId], references: [id])
