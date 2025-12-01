@@ -8,7 +8,8 @@ import { bankAccountSchema, BankAccountInput } from '@/lib/validations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
-import { Plus, Wallet, CreditCard } from 'lucide-react'
+import { Plus, Wallet, CreditCard, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 
 interface BankAccount {
   id: string
@@ -27,28 +28,74 @@ export default function AccountsPage() {
   const { data: banks, loading, refetch } = useFetch<BankAccount[]>('/api/bank-accounts')
   const { data: cash, refetch: refetchCash } = useFetch<CashAccount>('/api/cash-account')
   const [showForm, setShowForm] = useState(false)
-  const [editingCash, setEditingCash] = useState(false)
-  const [cashBalance, setCashBalance] = useState('')
+  const [showCashModal, setShowCashModal] = useState(false)
+  const [cashTransactionType, setCashTransactionType] = useState<'add' | 'withdraw'>('add')
+  const [cashAmount, setCashAmount] = useState('')
+  const [selectedBankAccount, setSelectedBankAccount] = useState('')
+  const [cashDescription, setCashDescription] = useState('')
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<BankAccountInput>({
     resolver: zodResolver(bankAccountSchema) as any,
+    defaultValues: {
+      name: '',
+      bankName: '',
+      accountNo: '',
+      balance: 0,
+    },
   })
 
   const onSubmit = async (data: BankAccountInput) => {
-    await postData('/api/bank-accounts', data)
-    reset()
-    setShowForm(false)
-    refetch()
+    try {
+      console.log('Submitting bank account data:', data)
+      await postData('/api/bank-accounts', data)
+      reset()
+      setShowForm(false)
+      refetch()
+    } catch (error) {
+      console.error('Failed to add bank account:', error)
+      alert(`Failed to add bank account: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
-  const updateCash = async () => {
-    await fetch('/api/cash-account', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ balance: parseFloat(cashBalance) }),
-    })
-    setEditingCash(false)
-    refetchCash()
+  const handleCashTransaction = async () => {
+    try {
+      const amount = parseFloat(cashAmount)
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount')
+        return
+      }
+
+      if (!selectedBankAccount) {
+        alert('Please select a bank account')
+        return
+      }
+
+      const response = await fetch('/api/cash-account/transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: cashTransactionType,
+          amount,
+          bankAccountId: selectedBankAccount,
+          description: cashDescription || `${cashTransactionType === 'add' ? 'Deposit to' : 'Withdrawal from'} cash`,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Transaction failed')
+      }
+
+      setShowCashModal(false)
+      setCashAmount('')
+      setSelectedBankAccount('')
+      setCashDescription('')
+      refetchCash()
+      refetch()
+    } catch (error) {
+      console.error('Cash transaction failed:', error)
+      alert(`Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   const totalBankBalance = banks?.reduce((sum, acc) => sum + acc.balance, 0) || 0
@@ -73,25 +120,24 @@ export default function AccountsPage() {
               <p className="text-xl sm:text-2xl font-bold">{formatCurrency(cash?.balance || 0)}</p>
             </div>
           </div>
-          {editingCash ? (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="number"
-                value={cashBalance}
-                onChange={(e) => setCashBalance(e.target.value)}
-                placeholder="Enter balance"
-                className="flex-1"
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={updateCash} className="flex-1 sm:flex-none">Save</Button>
-                <Button size="sm" variant="secondary" onClick={() => setEditingCash(false)} className="flex-1 sm:flex-none">Cancel</Button>
-              </div>
-            </div>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => { setEditingCash(true); setCashBalance(String(cash?.balance || 0)) }} className="w-full sm:w-auto">
-              Update Balance
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => { setCashTransactionType('add'); setShowCashModal(true) }} 
+              className="flex-1 sm:flex-none text-green-600 hover:text-green-700 hover:bg-green-50"
+            >
+              <ArrowDownToLine className="w-4 h-4 mr-1" /> Withdraw
             </Button>
-          )}
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => { setCashTransactionType('withdraw'); setShowCashModal(true) }} 
+              className="flex-1 sm:flex-none text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <ArrowUpFromLine className="w-4 h-4 mr-1" /> Deposit
+            </Button>
+          </div>
         </div>
         
         <div className="bg-white rounded-lg shadow p-5 sm:p-6">
@@ -125,11 +171,17 @@ export default function AccountsPage() {
       )}
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Bank Account">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, (errors) => console.log('Validation errors:', errors))} className="space-y-4">
           <Input label="Account Name" {...register('name')} error={errors.name?.message} />
           <Input label="Bank Name" {...register('bankName')} error={errors.bankName?.message} />
           <Input label="Account Number" {...register('accountNo')} error={errors.accountNo?.message} />
-          <Input label="Initial Balance" type="number" {...register('balance')} />
+          <Input 
+            label="Initial Balance" 
+            type="number" 
+            step="0.01"
+            {...register('balance', { valueAsNumber: true })} 
+            error={errors.balance?.message}
+          />
           <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={() => setShowForm(false)} className="w-full sm:w-auto">Cancel</Button>
             <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
@@ -137,6 +189,81 @@ export default function AccountsPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal 
+        isOpen={showCashModal} 
+        onClose={() => setShowCashModal(false)} 
+        title={cashTransactionType === 'add' ? 'Withdraw Cash from Bank' : 'Deposit Cash to Bank'}
+      >
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg ${cashTransactionType === 'add' ? 'bg-green-50' : 'bg-blue-50'}`}>
+            <p className="text-sm font-medium mb-2">
+              {cashTransactionType === 'add' ? (
+                <>
+                  <ArrowDownToLine className="w-4 h-4 inline mr-1" />
+                  Withdrawing cash from bank account
+                </>
+              ) : (
+                <>
+                  <ArrowUpFromLine className="w-4 h-4 inline mr-1" />
+                  Depositing cash to bank account
+                </>
+              )}
+            </p>
+            <p className="text-xs text-gray-600">
+              {cashTransactionType === 'add' 
+                ? 'This will decrease the selected bank account balance and increase cash on hand.'
+                : 'This will increase the selected bank account balance and decrease cash on hand.'}
+            </p>
+          </div>
+
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            value={cashAmount}
+            onChange={(e) => setCashAmount(e.target.value)}
+            placeholder="Enter amount"
+            required
+          />
+
+          <Select
+            label={cashTransactionType === 'add' ? 'Withdraw From Bank Account' : 'Deposit To Bank Account'}
+            value={selectedBankAccount}
+            onChange={(e) => setSelectedBankAccount(e.target.value)}
+            options={banks?.map(b => ({ 
+              value: b.id, 
+              label: `${b.name} - ${b.bankName} (${formatCurrency(b.balance)})` 
+            })) || []}
+            required
+          />
+
+          <Input
+            label="Description (Optional)"
+            value={cashDescription}
+            onChange={(e) => setCashDescription(e.target.value)}
+            placeholder="e.g., ATM withdrawal, cash deposit"
+          />
+
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => setShowCashModal(false)} 
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleCashTransaction} 
+              className="w-full sm:w-auto"
+            >
+              {cashTransactionType === 'add' ? 'Withdraw Cash' : 'Deposit Cash'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

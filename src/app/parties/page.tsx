@@ -33,13 +33,26 @@ export default function PartiesPage() {
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<PartyInput>({
     resolver: zodResolver(partySchema) as any,
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      address: '',
+      type: undefined,
+    },
   })
 
   const onSubmit = async (data: PartyInput) => {
-    await postData('/api/parties', data)
-    reset()
-    setShowForm(false)
-    refetch()
+    try {
+      console.log('Submitting party data:', data)
+      await postData('/api/parties', data)
+      reset()
+      setShowForm(false)
+      refetch()
+    } catch (error) {
+      console.error('Failed to add party:', error)
+      alert(`Failed to add party: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   const filteredParties = filter ? parties?.filter(p => p.type === filter) : parties
@@ -110,14 +123,14 @@ export default function PartiesPage() {
       )}
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Party">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, (errors) => console.log('Validation errors:', errors))} className="space-y-4">
           <Input label="Name" {...register('name')} error={errors.name?.message} />
           <Input label="Phone" {...register('phone')} />
           <Input label="Email" type="email" {...register('email')} />
           <Input label="Address" {...register('address')} />
           <Select
             label="Type"
-            {...register('type')}
+            {...register('type', { required: 'Type is required' })}
             error={errors.type?.message}
             options={[
               { value: 'SELLER', label: 'Seller' },
@@ -125,6 +138,7 @@ export default function PartiesPage() {
               { value: 'BROKER', label: 'Broker' },
               { value: 'DEALERSHIP', label: 'Dealership' },
             ]}
+            required
           />
           <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={() => setShowForm(false)} className="w-full sm:w-auto">Cancel</Button>

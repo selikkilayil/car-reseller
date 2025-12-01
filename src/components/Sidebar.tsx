@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Car, Users, CreditCard, Wallet, Wrench, LayoutDashboard, Menu, X } from 'lucide-react'
+import { Car, Users, CreditCard, Wrench, LayoutDashboard, Menu, X } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -18,13 +18,23 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-slate-200"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* Mobile header with burger menu */}
+      <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <Car className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-lg font-bold text-slate-900">Car Reseller</span>
+        </div>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </div>
 
       {/* Overlay */}
       {isOpen && (
@@ -41,11 +51,29 @@ export function Sidebar() {
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex items-center gap-3 mb-10 px-2">
+        {/* Desktop logo */}
+        <div className="hidden lg:flex items-center gap-3 mb-10 px-2">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
             <Car className="w-6 h-6 text-white" />
           </div>
           <span className="text-xl font-bold text-slate-900">Car Reseller</span>
+        </div>
+
+        {/* Mobile close button and logo */}
+        <div className="lg:hidden flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <Car className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-slate-900">Car Reseller</span>
+          </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
         
         <nav className="space-y-1">
