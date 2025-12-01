@@ -62,9 +62,9 @@ export function RepairForm({ carId, onSuccess, onCancel }: Props) {
         />
       )}
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>
+      <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+        <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto">Cancel</Button>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? 'Saving...' : 'Add Repair'}
         </Button>
       </div>

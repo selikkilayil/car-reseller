@@ -14,7 +14,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div>
-      <Link href="/cars" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
+      <Link href="/cars" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 text-sm sm:text-base">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Cars
       </Link>
       <CarDetail car={car} onUpdate={refetch} />

@@ -42,7 +42,7 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Make" {...register('make')} error={errors.make?.message} />
         <Input label="Model" {...register('model')} error={errors.model?.message} />
         <Input label="Year" type="number" {...register('year')} error={errors.year?.message} />
@@ -53,7 +53,7 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
         <Input label="Purchase Date" type="date" {...register('purchaseDate')} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
           label="Purchase Source"
           {...register('purchaseSource')}
@@ -70,7 +70,7 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
           label="Broker (Optional)"
           {...register('purchaseBrokerId')}
@@ -87,10 +87,10 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
       </div>
 
       {isInLoan && (
-        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
           <Input label="Loan Amount" type="number" {...register('loanAmount')} />
           <Input label="Amount Paid to Seller" type="number" {...register('amountPaidToSeller')} />
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <Input label="Loan Details" {...register('loanDetails')} />
           </div>
         </div>
@@ -115,15 +115,15 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
       )}
 
       {paymentMethod === 'MIXED' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Bank Amount" type="number" {...register('bankAmount')} />
           <Input label="Cash Amount" type="number" {...register('cashAmount')} />
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>
+      <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+        <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:w-auto">Cancel</Button>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? 'Saving...' : 'Create Purchase'}
         </Button>
       </div>

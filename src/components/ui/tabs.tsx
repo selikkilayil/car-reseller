@@ -26,7 +26,7 @@ export function TabsList({ children, className = '' }: { children: ReactNode; cl
   )
 }
 
-export function TabsTrigger({ value, children }: { value: string; children: ReactNode }) {
+export function TabsTrigger({ value, children, className = '' }: { value: string; children: ReactNode; className?: string }) {
   const ctx = useContext(TabsContext)
   if (!ctx) return null
   
@@ -39,7 +39,7 @@ export function TabsTrigger({ value, children }: { value: string; children: Reac
         isActive
           ? 'border-blue-500 text-blue-600'
           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-      }`}
+      } ${className}`}
     >
       {children}
     </button>
