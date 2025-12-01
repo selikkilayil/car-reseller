@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Bank accounts for tracking finances
+model BankAccount {
+  id          String   @id @default(cuid())
+  name        String
+  bankName    String
+  accountNo   String
+  balance     Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+// Cash account (single record for cash tracking)
+model CashAccount {
+  id          String   @id @default(cuid())
+  balance     Float    @default(0)
+  updatedAt   DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+// Parties - sellers, buyers, brokers
+model Party {
+  id          String    @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  type        String    // SELLER, BUYER, BROKER, DEALERSHIP
+  createdAt   DateTime  @default(now())
+
+  carsPurchasedFrom Car[]       @relation("PurchaseParty")
+  carsBrokered      Car[]       @relation("PurchaseBroker")
+  carsSoldTo        Car[]       @relation("SaleParty")
+  salesBrokered     Car[]       @relation("SaleBroker")
+}
+
+// Main Car entity - tracks entire lifecycle
+model Car {
+  id              String   @id @default(cuid())
+  
+  // Basic info
+  make            String
+  model           String
+  year            Int
+  vin             String?
+  registrationNo  String?
+  color           String?
+  mileage         Int?
+  
+  // Status: PURCHASED, IN_REPAIR, READY_FOR_SALE, SOLD, DELIVERED
+  status          String   @default("PURCHASED")
+  
+  // Purchase details
+  purchaseDate    DateTime @default(now())
+  purchasePrice   Float
+  purchasePartyId String
+  purchaseParty   Party    @relation("PurchaseParty", fields: [purchasePartyId], references: [id])
+  purchaseSource  String   // DIRECT_USER, DEALERSHIP
+  
+  // Broker for purchase (optional)
+  purchaseBrokerId   String?
+  purchaseBroker     Party?   @relation("PurchaseBroker", fields: [purchaseBrokerId], references: [id])
+  brokerageAmount    Float?
+  
+  // Loan info if vehicle is in loan
+  isInLoan           Boolean  @default(false)
+  loanAmount         Float?
+  loanDetails        String?
+  amountPaidToSeller Float?   // What we actually paid
+  
+  // Sale details (filled when sold)
+  saleDate        DateTime?
+  netRate         Float?      // Base rate
+  salePrice       Float?      // Final price
+  salePartyId     String?
+  saleParty       Party?      @relation("SaleParty", fields: [salePartyId], references: [id])
+  saleBrokerId    String?
+  saleBroker      Party?      @relation("SaleBroker", fields: [saleBrokerId], references: [id])
+  saleBrokerage   Float?
+  saleType        String?     // CASH, LOAN
+  deliveryDate    DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  repairs         Repair[]
+  expenses        Expense[]
+  transactions    Transaction[]
+}
+
+// Repair types and records
+model RepairType {
+  id          String   @id @default(cuid())
+  name        String   @unique  // BODYWORK, ELECTRIC, PAINTING, SPARES, etc.
+  description String?
+  
+  repairs     Repair[]
+}
+
+model Repair {
+  id            String     @id @default(cuid())
+  carId         String
+  car           Car        @relation(fields: [carId], references: [id], onDelete: Cascade)
+  repairTypeId  String
+  repairType    RepairType @relation(fields: [repairTypeId], references: [id])
+  description   String?
+  cost          Float
+  vendorName    String?
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+
+  transactions  Transaction[]
+}
+
+// Expenses - categorized by phase
+model Expense {
+  id          String   @id @default(cuid())
+  carId       String
+  car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  category    String   // PURCHASE, REPAIR, SALE
+  type        String   // TRAVEL, FUEL, BROKERAGE, DELIVERY, OTHER
+  description String?
+  amount      Float
+  createdAt   DateTime @default(now())
+
+  transactions Transaction[]
+}
+
+// Transaction records for all money movements
+model Transaction {
+  id              String       @id @default(cuid())
+  amount          Float
+  type            String       // DEBIT, CREDIT
+  purpose         String       // PURCHASE, REPAIR, EXPENSE, SALE
+  description     String?
+  
+  // Payment method
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  cashAccountId   String?
+  cashAccount     CashAccount? @relation(fields: [cashAccountId], references: [id])
+  
+  // Related entities
+  carId           String?
+  car             Car?         @relation(fields: [carId], references: [id])
+  repairId        String?
+  repair          Repair?      @relation(fields: [repairId], references: [id])
+  expenseId       String?
+  expense         Expense?     @relation(fields: [expenseId], references: [id])
+  
+  createdAt       DateTime     @default(now())
+}
