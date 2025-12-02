@@ -6,8 +6,8 @@ export function useFetch<T>(url: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const refetch = useCallback(async () => {
-    setLoading(true)
+  const refetch = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true)
     try {
       const res = await fetch(url)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -17,12 +17,12 @@ export function useFetch<T>(url: string) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error')
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }, [url])
 
   useEffect(() => {
-    refetch()
+    refetch(true)
   }, [refetch])
 
   return { data, loading, error, refetch }

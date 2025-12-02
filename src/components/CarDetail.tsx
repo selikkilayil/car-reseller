@@ -34,6 +34,7 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
   const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | 'edit' | null>(null)
   const [editingExpense, setEditingExpense] = useState<any>(null)
   const [editingRepair, setEditingRepair] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState('purchase')
 
   const updateStatus = async (status: string) => {
     await patchData(`/api/cars/${car.id}/status`, { status })
@@ -137,13 +138,13 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
         </div>
       </div>
 
-      <Tabs defaultValue="purchase" className="p-4 sm:p-6">
-        <TabsList className="w-full overflow-x-auto flex-nowrap">
-          <TabsTrigger value="purchase" className="whitespace-nowrap">Purchase</TabsTrigger>
-          <TabsTrigger value="repairs" className="whitespace-nowrap">Repairs ({car.repairs?.length || 0})</TabsTrigger>
-          <TabsTrigger value="sale" className="whitespace-nowrap">Sale</TabsTrigger>
-          <TabsTrigger value="transactions" className="whitespace-nowrap">Transactions ({car.transactions?.length || 0})</TabsTrigger>
-          <TabsTrigger value="summary" className="whitespace-nowrap">Summary</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="p-4 sm:p-6">
+        <TabsList className="w-full flex-wrap gap-1">
+          <TabsTrigger value="purchase" className="flex-1 sm:flex-none min-w-0">Purchase</TabsTrigger>
+          <TabsTrigger value="repairs" className="flex-1 sm:flex-none min-w-0">Repairs ({car.repairs?.length || 0})</TabsTrigger>
+          <TabsTrigger value="sale" className="flex-1 sm:flex-none min-w-0">Sale</TabsTrigger>
+          <TabsTrigger value="transactions" className="flex-1 sm:flex-none min-w-0">Txns ({car.transactions?.length || 0})</TabsTrigger>
+          <TabsTrigger value="summary" className="flex-1 sm:flex-none min-w-0">Summary</TabsTrigger>
         </TabsList>
 
         <TabsContent value="purchase">
