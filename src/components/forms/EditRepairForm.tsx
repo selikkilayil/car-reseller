@@ -28,9 +28,6 @@ interface Props {
 export function EditRepairForm({ repair, onSuccess, onCancel }: Props) {
   const { data: repairTypes } = useFetch<RepairType[]>('/api/repair-types')
   
-  console.log('Repair data:', repair)
-  console.log('Repair types:', repairTypes)
-  
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<RepairEditInput>({
     resolver: zodResolver(repairEditSchema) as any,
     defaultValues: {
@@ -44,7 +41,6 @@ export function EditRepairForm({ repair, onSuccess, onCancel }: Props) {
   // Ensure the repair type is set when repair types load
   React.useEffect(() => {
     if (repair.repairTypeId && repairTypes) {
-      console.log('Setting repairTypeId to:', repair.repairTypeId)
       setValue('repairTypeId', repair.repairTypeId)
     }
   }, [repair.repairTypeId, repairTypes, setValue])

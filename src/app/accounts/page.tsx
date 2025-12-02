@@ -53,13 +53,11 @@ export default function AccountsPage() {
 
   const onSubmit = async (data: BankAccountInput) => {
     try {
-      console.log('Submitting bank account data:', data)
       await postData('/api/bank-accounts', data)
       reset()
       setShowForm(false)
       refetch()
     } catch (error) {
-      console.error('Failed to add bank account:', error)
       alert(`Failed to add bank account: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -100,7 +98,6 @@ export default function AccountsPage() {
       refetchCash()
       refetch()
     } catch (error) {
-      console.error('Cash transaction failed:', error)
       alert(`Transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -138,7 +135,6 @@ export default function AccountsPage() {
       setSelectedBankForAddMoney('')
       refetch()
     } catch (error) {
-      console.error('Add money failed:', error)
       alert(`Failed to add money: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -170,7 +166,6 @@ export default function AccountsPage() {
       setAddCashDescription('')
       refetchCash()
     } catch (error) {
-      console.error('Add cash failed:', error)
       alert(`Failed to add cash: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -261,7 +256,7 @@ export default function AccountsPage() {
       )}
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Bank Account">
-        <form onSubmit={handleSubmit(onSubmit, (errors) => console.log('Validation errors:', errors))} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Account Name" {...register('name')} error={errors.name?.message} />
           <Input label="Bank Name" {...register('bankName')} error={errors.bankName?.message} />
           <Input label="Account Number" {...register('accountNo')} error={errors.accountNo?.message} />

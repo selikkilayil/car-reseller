@@ -44,13 +44,11 @@ export default function PartiesPage() {
 
   const onSubmit = async (data: PartyInput) => {
     try {
-      console.log('Submitting party data:', data)
       await postData('/api/parties', data)
       reset()
       setShowForm(false)
       refetch()
     } catch (error) {
-      console.error('Failed to add party:', error)
       alert(`Failed to add party: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -123,7 +121,7 @@ export default function PartiesPage() {
       )}
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Add Party">
-        <form onSubmit={handleSubmit(onSubmit, (errors) => console.log('Validation errors:', errors))} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Name" {...register('name')} error={errors.name?.message} />
           <Input label="Phone" {...register('phone')} />
           <Input label="Email" type="email" {...register('email')} />

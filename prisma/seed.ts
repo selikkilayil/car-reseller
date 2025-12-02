@@ -23,7 +23,6 @@ async function main() {
         role: 'ADMIN',
       },
     })
-    console.log('Default admin user created: admin / admin123')
   }
 
   // Create default repair types
@@ -52,8 +51,6 @@ async function main() {
     update: {},
     create: { id: 'default-cash', balance: 0 },
   })
-
-  console.log('Seed completed!')
 }
 
 main()

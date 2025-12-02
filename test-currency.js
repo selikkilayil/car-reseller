@@ -9,9 +9,15 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-console.log('Testing INR Currency Formatting:')
-console.log('120000 =>', formatCurrency(120000))
-console.log('1500000 =>', formatCurrency(1500000))
-console.log('50000 =>', formatCurrency(50000))
-console.log('0 =>', formatCurrency(0))
-console.log('null =>', formatCurrency(null))
+// Test cases
+const testCases = [
+  { input: 120000, expected: formatCurrency(120000) },
+  { input: 1500000, expected: formatCurrency(1500000) },
+  { input: 50000, expected: formatCurrency(50000) },
+  { input: 0, expected: formatCurrency(0) },
+  { input: null, expected: formatCurrency(null) },
+]
+
+testCases.forEach(({ input, expected }) => {
+  // Results can be checked programmatically
+})
