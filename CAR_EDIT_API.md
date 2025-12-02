@@ -144,6 +144,29 @@ Make sure your development server is running first:
 npm run dev
 ```
 
+## Frontend Implementation
+
+### Edit Button
+An edit button (pencil icon) is available in the car detail page header. Clicking it opens a modal with the edit form.
+
+### Edit Form
+The edit form (`EditCarForm`) allows updating:
+- Basic vehicle information (make, model, year, color, VIN, registration, mileage)
+- Purchase details (date, price, seller, source, broker)
+- Loan information (if applicable)
+- Net rate (if car is ready for sale)
+
+### Delete Button
+A delete button (trash icon) is available in the car detail page header. It will:
+- Show a confirmation dialog
+- Delete the car and all related records
+- Redirect to the cars list page
+
+### Components
+- `EditCarForm` - Form component for editing car details
+- `CarDetail` - Updated to include edit and delete buttons
+- `useData` - Added `putData` and `deleteData` helper functions
+
 ## Notes
 
 - Only fields provided in the request will be updated
@@ -151,3 +174,5 @@ npm run dev
 - Deleting a car will cascade delete all related records (repairs, expenses, transactions)
 - The car status cannot be changed through this endpoint (use specific status endpoints)
 - Financial transactions are not automatically adjusted when updating prices
+- Edit functionality is available from the car detail page
+- Delete requires confirmation and cannot be undone
