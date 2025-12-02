@@ -1,8 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { carPurchaseSchema } from '@/lib/validations'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, Permissions } from '@/lib/auth'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  // Check if user has permission to view cars
+  const auth = await requireAuth(req, Permissions.canViewCars)
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
   
@@ -58,7 +65,13 @@ export async function GET(req: Request) {
   return NextResponse.json(carsWithSummary)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Check if user has permission to create cars
+  const auth = await requireAuth(req, Permissions.canCreateCars)
+  if ('error' in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
   const body = await req.json()
   const data = carPurchaseSchema.parse(body)
   

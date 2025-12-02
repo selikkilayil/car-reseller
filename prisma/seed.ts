@@ -1,8 +1,31 @@
 import { PrismaClient } from '@prisma/client'
+import * as crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex')
+}
+
 async function main() {
+  // Create default admin user
+  const adminUsername = 'admin'
+  const existingAdmin = await prisma.user.findUnique({
+    where: { username: adminUsername },
+  })
+
+  if (!existingAdmin) {
+    await prisma.user.create({
+      data: {
+        username: adminUsername,
+        password: hashPassword('admin123'),
+        name: 'Admin User',
+        role: 'ADMIN',
+      },
+    })
+    console.log('Default admin user created: admin / admin123')
+  }
+
   // Create default repair types
   const repairTypes = [
     { name: 'BODYWORK', description: 'Body repairs, dents, scratches' },

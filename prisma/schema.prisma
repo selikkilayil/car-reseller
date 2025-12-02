@@ -7,6 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User and RBAC models
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Hashed password
+  name      String
+  role      Role     @default(VIEWER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions  Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN       // Full access to everything
+  MANAGER     // Can manage cars, repairs, transactions, parties
+  ACCOUNTANT  // Can view all, manage transactions and accounts
+  VIEWER      // Read-only access
+}
+
 // Bank accounts for tracking finances
 model BankAccount {
   id          String   @id @default(cuid())
