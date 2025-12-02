@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Car, Users, CreditCard, Wrench, LayoutDashboard, Menu, X, Receipt } from 'lucide-react'
 
@@ -28,11 +29,14 @@ export function Sidebar() {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <Car className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-slate-900">Car Reseller</span>
+        <div className="flex items-center">
+          <Image 
+            src="/logo.png" 
+            alt="Car Reseller Logo" 
+            width={160} 
+            height={54}
+            className="h-11 w-auto object-contain"
+          />
         </div>
         <div className="w-10" /> {/* Spacer for centering */}
       </div>
@@ -53,20 +57,26 @@ export function Sidebar() {
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Desktop logo */}
-        <div className="hidden lg:flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <Car className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold text-slate-900">Car Reseller</span>
+        <div className="hidden lg:flex items-center mb-10 px-2">
+          <Image 
+            src="/logo.png" 
+            alt="Car Reseller Logo" 
+            width={180} 
+            height={60}
+            className="h-12 w-auto object-contain"
+          />
         </div>
 
         {/* Mobile close button and logo */}
         <div className="lg:hidden flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Car className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-900">Car Reseller</span>
+          <div className="flex items-center">
+            <Image 
+              src="/logo.png" 
+              alt="Car Reseller Logo" 
+              width={180} 
+              height={60}
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <button
             onClick={() => setIsOpen(false)}
