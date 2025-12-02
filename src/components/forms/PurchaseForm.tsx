@@ -55,7 +55,7 @@ export function PurchaseForm({ onSuccess, onCancel }: Props) {
 
   const onPartySubmit = async (data: PartyInput, isBroker: boolean = false) => {
     try {
-      const result = await postData('/api/parties', data)
+      const result = await postData<Party>('/api/parties', data)
       resetParty()
       if (isBroker) {
         setShowBrokerForm(false)
