@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import { carEditSchema } from '@/lib/validations'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,9 +13,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       purchaseBroker: true,
       saleParty: true,
       saleBroker: true,
-      repairs: { include: { repairType: true, transactions: true } },
-      expenses: { include: { transactions: true } },
-      transactions: { include: { bankAccount: true, cashAccount: true } },
+      repairs: { include: { repairType: true } },
+      expenses: true,
+      transactions: true,
     },
   })
   
@@ -21,66 +23,69 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: 'Car not found' }, { status: 404 })
   }
   
-  // Calculate totals
-  const purchaseTotal = car.amountPaidToSeller || car.purchasePrice
-  const repairTotal = car.repairs.reduce((sum, r) => sum + r.cost, 0)
-  const purchaseExpenses = car.expenses.filter(e => e.category === 'PURCHASE').reduce((sum, e) => sum + e.amount, 0)
-  const repairExpenses = car.expenses.filter(e => e.category === 'REPAIR').reduce((sum, e) => sum + e.amount, 0)
-  const saleExpenses = car.expenses.filter(e => e.category === 'SALE').reduce((sum, e) => sum + e.amount, 0)
-  
-  const totalCost = purchaseTotal + repairTotal + purchaseExpenses + repairExpenses + (car.brokerageAmount || 0)
-  const profit = car.salePrice ? car.salePrice - totalCost - saleExpenses - (car.saleBrokerage || 0) : null
-  
-  // Calculate days since purchase
-  const daysSincePurchase = Math.floor(
-    (Date.now() - new Date(car.purchaseDate).getTime()) / (1000 * 60 * 60 * 24)
-  )
-  
-  // Calculate repair days if car went through repair
-  let repairDays = null
-  if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'SOLD' || car.status === 'DELIVERED') {
-    const firstRepair = car.repairs.sort((a, b) => 
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    )[0]
-    
-    if (firstRepair) {
-      const repairStartDate = new Date(firstRepair.createdAt)
-      const repairEndDate = car.readyForSaleDate ? new Date(car.readyForSaleDate) : new Date()
-      repairDays = Math.floor((repairEndDate.getTime() - repairStartDate.getTime()) / (1000 * 60 * 60 * 24))
-    }
-  }
-  
-  return NextResponse.json({
-    ...car,
-    summary: {
-      purchaseTotal,
-      repairTotal,
-      purchaseExpenses,
-      repairExpenses,
-      saleExpenses,
-      totalCost,
-      profit,
-      daysSincePurchase,
-      repairDays,
-    },
-  })
+  return NextResponse.json(car)
 }
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await req.json()
   
-  const car = await prisma.car.update({
-    where: { id },
-    data: body,
-  })
-  
-  return NextResponse.json(car)
+  try {
+    const data = carEditSchema.parse(body)
+    
+    // Check if car exists
+    const existingCar = await prisma.car.findUnique({ where: { id } })
+    if (!existingCar) {
+      return NextResponse.json({ error: 'Car not found' }, { status: 404 })
+    }
+    
+    // Prepare update data
+    const updateData: any = { ...data }
+    
+    // Convert purchaseDate string to Date if provided
+    if (data.purchaseDate) {
+      updateData.purchaseDate = new Date(data.purchaseDate)
+    }
+    
+    // Update car
+    const car = await prisma.car.update({
+      where: { id },
+      data: updateData,
+      include: {
+        purchaseParty: true,
+        purchaseBroker: true,
+        saleParty: true,
+        saleBroker: true,
+        repairs: { include: { repairType: true } },
+        expenses: true,
+        transactions: true,
+      },
+    })
+    
+    return NextResponse.json(car)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Failed to update car' }, { status: 500 })
+  }
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   
-  await prisma.car.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  try {
+    // Check if car exists
+    const existingCar = await prisma.car.findUnique({ where: { id } })
+    if (!existingCar) {
+      return NextResponse.json({ error: 'Car not found' }, { status: 404 })
+    }
+    
+    // Delete car (cascade will handle related records)
+    await prisma.car.delete({ where: { id } })
+    
+    return NextResponse.json({ message: 'Car deleted successfully' })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete car' }, { status: 500 })
+  }
 }

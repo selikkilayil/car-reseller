@@ -79,3 +79,26 @@ export type CarPurchaseInput = z.infer<typeof carPurchaseSchema>
 export type RepairInput = z.infer<typeof repairSchema>
 export type ExpenseInput = z.infer<typeof expenseSchema>
 export type SaleInput = z.infer<typeof saleSchema>
+
+export const carEditSchema = z.object({
+  make: z.string().min(1, 'Make is required').optional(),
+  model: z.string().min(1, 'Model is required').optional(),
+  year: z.coerce.number().min(1900).max(new Date().getFullYear() + 1).optional(),
+  vin: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  registrationNo: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  color: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  mileage: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  purchaseDate: z.string().optional(),
+  purchasePrice: z.coerce.number().min(0, 'Price must be positive').optional(),
+  purchasePartyId: z.string().min(1, 'Seller is required').optional(),
+  purchaseSource: z.enum(['DIRECT_USER', 'DEALERSHIP']).optional(),
+  purchaseBrokerId: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  brokerageAmount: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  isInLoan: z.boolean().optional(),
+  loanAmount: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  loanDetails: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  amountPaidToSeller: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+  netRate: z.coerce.number().optional().or(z.literal('')).transform(val => val === '' ? undefined : val),
+})
+
+export type CarEditInput = z.infer<typeof carEditSchema>
