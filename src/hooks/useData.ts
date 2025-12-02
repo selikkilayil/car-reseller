@@ -50,3 +50,28 @@ export async function patchData<T>(url: string, data: unknown): Promise<T> {
   if (!res.ok) throw new Error('Request failed')
   return res.json()
 }
+
+export async function putData<T>(url: string, data: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.message || 'Request failed')
+  }
+  return res.json()
+}
+
+export async function deleteData<T>(url: string): Promise<T> {
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.message || 'Request failed')
+  }
+  return res.json()
+}

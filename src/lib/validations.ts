@@ -102,3 +102,20 @@ export const carEditSchema = z.object({
 })
 
 export type CarEditInput = z.infer<typeof carEditSchema>
+
+export const expenseEditSchema = z.object({
+  type: z.enum(['TRAVEL', 'FUEL', 'BROKERAGE', 'DELIVERY', 'OTHER']).optional(),
+  description: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  amount: z.coerce.number().min(0).optional(),
+})
+
+export type ExpenseEditInput = z.infer<typeof expenseEditSchema>
+
+export const repairEditSchema = z.object({
+  repairTypeId: z.string().min(1, 'Repair type is required').optional(),
+  description: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  vendorName: z.string().optional().or(z.literal('')).transform(val => val || undefined),
+  cost: z.coerce.number().min(0).optional(),
+})
+
+export type RepairEditInput = z.infer<typeof repairEditSchema>

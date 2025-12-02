@@ -8,7 +8,7 @@ import { bankAccountSchema, BankAccountInput } from '@/lib/validations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
-import { Plus, Wallet, CreditCard, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import { Plus, Wallet, CreditCard, ArrowDownToLine, ArrowUpFromLine, PlusCircle } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 
 interface BankAccount {
@@ -33,6 +33,13 @@ export default function AccountsPage() {
   const [cashAmount, setCashAmount] = useState('')
   const [selectedBankAccount, setSelectedBankAccount] = useState('')
   const [cashDescription, setCashDescription] = useState('')
+  const [showAddMoneyModal, setShowAddMoneyModal] = useState(false)
+  const [addMoneyAmount, setAddMoneyAmount] = useState('')
+  const [addMoneyDescription, setAddMoneyDescription] = useState('')
+  const [selectedBankForAddMoney, setSelectedBankForAddMoney] = useState('')
+  const [showAddCashModal, setShowAddCashModal] = useState(false)
+  const [addCashAmount, setAddCashAmount] = useState('')
+  const [addCashDescription, setAddCashDescription] = useState('')
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<BankAccountInput>({
     resolver: zodResolver(bankAccountSchema) as any,
@@ -98,15 +105,90 @@ export default function AccountsPage() {
     }
   }
 
+  const handleAddMoney = async () => {
+    try {
+      const amount = parseFloat(addMoneyAmount)
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount')
+        return
+      }
+
+      if (!selectedBankForAddMoney) {
+        alert('Please select a bank account')
+        return
+      }
+
+      const response = await fetch(`/api/bank-accounts/${selectedBankForAddMoney}/add-money`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          description: addMoneyDescription || 'Money added to account',
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to add money')
+      }
+
+      setShowAddMoneyModal(false)
+      setAddMoneyAmount('')
+      setAddMoneyDescription('')
+      setSelectedBankForAddMoney('')
+      refetch()
+    } catch (error) {
+      console.error('Add money failed:', error)
+      alert(`Failed to add money: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleAddCash = async () => {
+    try {
+      const amount = parseFloat(addCashAmount)
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount')
+        return
+      }
+
+      const response = await fetch('/api/cash-account/add-money', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          description: addCashDescription || 'Money added to cash',
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to add cash')
+      }
+
+      setShowAddCashModal(false)
+      setAddCashAmount('')
+      setAddCashDescription('')
+      refetchCash()
+    } catch (error) {
+      console.error('Add cash failed:', error)
+      alert(`Failed to add cash: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   const totalBankBalance = banks?.reduce((sum, acc) => sum + acc.balance, 0) || 0
 
   return (
     <div className="text-gray-900">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Accounts</h1>
-        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Add Bank Account
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button onClick={() => setShowAddMoneyModal(true)} variant="secondary" className="w-full sm:w-auto">
+            <PlusCircle className="w-4 h-4 mr-2" /> Add Money
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 mr-2" /> Add Bank Account
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -120,7 +202,15 @@ export default function AccountsPage() {
               <p className="text-xl sm:text-2xl font-bold">{formatCurrency(cash?.balance || 0)}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => setShowAddCashModal(true)} 
+              className="flex-1 sm:flex-none text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+            >
+              <PlusCircle className="w-4 h-4 mr-1" /> Add Cash
+            </Button>
             <Button 
               size="sm" 
               variant="ghost" 
@@ -261,6 +351,123 @@ export default function AccountsPage() {
               className="w-full sm:w-auto"
             >
               {cashTransactionType === 'add' ? 'Withdraw Cash' : 'Deposit Cash'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={showAddMoneyModal} 
+        onClose={() => setShowAddMoneyModal(false)} 
+        title="Add Money to Bank Account"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-green-50">
+            <p className="text-sm font-medium mb-2">
+              <PlusCircle className="w-4 h-4 inline mr-1" />
+              Adding money to bank account
+            </p>
+            <p className="text-xs text-gray-600">
+              This will increase the selected bank account balance. Use this for deposits, transfers, or other income.
+            </p>
+          </div>
+
+          <Select
+            label="Select Bank Account"
+            value={selectedBankForAddMoney}
+            onChange={(e) => setSelectedBankForAddMoney(e.target.value)}
+            options={banks?.map(b => ({ 
+              value: b.id, 
+              label: `${b.name} - ${b.bankName} (${formatCurrency(b.balance)})` 
+            })) || []}
+            required
+          />
+
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            value={addMoneyAmount}
+            onChange={(e) => setAddMoneyAmount(e.target.value)}
+            placeholder="Enter amount"
+            required
+          />
+
+          <Input
+            label="Description (Optional)"
+            value={addMoneyDescription}
+            onChange={(e) => setAddMoneyDescription(e.target.value)}
+            placeholder="e.g., Bank transfer, deposit, income"
+          />
+
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => setShowAddMoneyModal(false)} 
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleAddMoney} 
+              className="w-full sm:w-auto"
+            >
+              Add Money
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={showAddCashModal} 
+        onClose={() => setShowAddCashModal(false)} 
+        title="Add Money to Cash"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-purple-50">
+            <p className="text-sm font-medium mb-2">
+              <PlusCircle className="w-4 h-4 inline mr-1" />
+              Adding money directly to cash
+            </p>
+            <p className="text-xs text-gray-600">
+              This will increase your cash on hand without any bank transfer. Use this for cash income, sales, or other cash receipts.
+            </p>
+          </div>
+
+          <Input
+            label="Amount"
+            type="number"
+            step="0.01"
+            value={addCashAmount}
+            onChange={(e) => setAddCashAmount(e.target.value)}
+            placeholder="Enter amount"
+            required
+          />
+
+          <Input
+            label="Description (Optional)"
+            value={addCashDescription}
+            onChange={(e) => setAddCashDescription(e.target.value)}
+            placeholder="e.g., Cash sale, payment received, income"
+          />
+
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => setShowAddCashModal(false)} 
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleAddCash} 
+              className="w-full sm:w-auto"
+            >
+              Add Cash
             </Button>
           </div>
         </div>

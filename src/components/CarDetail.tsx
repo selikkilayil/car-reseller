@@ -9,8 +9,12 @@ import { RepairForm } from '@/components/forms/RepairForm'
 import { ExpenseForm } from '@/components/forms/ExpenseForm'
 import { SaleForm } from '@/components/forms/SaleForm'
 import { ReadyForSaleForm } from '@/components/forms/ReadyForSaleForm'
-import { patchData } from '@/hooks/useData'
-import { Plus, Wrench, DollarSign, ShoppingCart, Truck } from 'lucide-react'
+import { EditCarForm } from '@/components/forms/EditCarForm'
+import { EditExpenseForm } from '@/components/forms/EditExpenseForm'
+import { EditRepairForm } from '@/components/forms/EditRepairForm'
+import { patchData, deleteData } from '@/hooks/useData'
+import { Plus, Wrench, DollarSign, ShoppingCart, Truck, Edit, Trash2, Pencil } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface CarDetailProps {
   car: any
@@ -26,7 +30,11 @@ const statusColors: Record<string, 'default' | 'warning' | 'info' | 'success' | 
 }
 
 export function CarDetail({ car, onUpdate }: CarDetailProps) {
-  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | null>(null)
+  const router = useRouter()
+  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | 'edit' | null>(null)
+  const [editingExpense, setEditingExpense] = useState<any>(null)
+  const [editingRepair, setEditingRepair] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const updateStatus = async (status: string) => {
     await patchData(`/api/cars/${car.id}/status`, { status })
@@ -38,6 +46,49 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
     onUpdate()
   }
 
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this car? This action cannot be undone.')) {
+      try {
+        await deleteData(`/api/cars/${car.id}`)
+        router.push('/cars')
+      } catch (error) {
+        alert('Failed to delete car')
+      }
+    }
+  }
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (confirm('Are you sure you want to delete this expense? The amount will be refunded to the account.')) {
+      try {
+        await deleteData(`/api/expenses/${expenseId}`)
+        onUpdate()
+      } catch (error) {
+        alert('Failed to delete expense')
+      }
+    }
+  }
+
+  const handleExpenseEditSuccess = () => {
+    setEditingExpense(null)
+    onUpdate()
+  }
+
+  const handleDeleteRepair = async (repairId: string) => {
+    if (confirm('Are you sure you want to delete this repair? The cost will be refunded to the account.')) {
+      try {
+        await deleteData(`/api/repairs/${repairId}`)
+        onUpdate()
+      } catch (error) {
+        alert('Failed to delete repair')
+      }
+    }
+  }
+
+  const handleRepairEditSuccess = () => {
+    setEditingRepair(null)
+    onUpdate()
+  }
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 sm:p-6 border-b">
@@ -46,7 +97,15 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
             <h2 className="text-xl sm:text-2xl font-bold">{car.make} {car.model} ({car.year})</h2>
             <p className="text-gray-500 text-sm sm:text-base">{car.registrationNo || car.vin || 'No ID'}</p>
           </div>
-          <Badge variant={statusColors[car.status]}>{car.status.replace('_', ' ')}</Badge>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setModal('edit')}>
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleDelete} className="text-red-600 hover:text-red-700">
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Badge variant={statusColors[car.status]}>{car.status.replace('_', ' ')}</Badge>
+          </div>
         </div>
         
         <div className="mt-4 flex flex-wrap gap-2">
@@ -106,9 +165,17 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
               </div>
               <div className="space-y-2">
                 {car.expenses?.filter((e: any) => e.category === 'PURCHASE').map((exp: any) => (
-                  <div key={exp.id} className="flex flex-col sm:flex-row justify-between p-2 bg-gray-50 rounded gap-1 text-sm">
-                    <span>{exp.type}: {exp.description || '-'}</span>
+                  <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
+                    <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
                     <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -125,13 +192,23 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
           </div>
           <div className="space-y-2">
             {car.repairs?.map((repair: any) => (
-              <div key={repair.id} className="flex flex-col sm:flex-row justify-between p-3 bg-gray-50 rounded gap-2">
-                <div className="text-sm sm:text-base">
+              <div key={repair.id} className="flex justify-between items-start p-3 bg-gray-50 rounded gap-2">
+                <div className="flex-1 text-sm sm:text-base">
                   <span className="font-medium">{repair.repairType?.name}</span>
                   {repair.description && <p className="text-xs sm:text-sm text-gray-500">{repair.description}</p>}
                   {repair.vendorName && <p className="text-xs sm:text-sm text-gray-500">Vendor: {repair.vendorName}</p>}
                 </div>
-                <span className="font-medium text-sm sm:text-base">{formatCurrency(repair.cost)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm sm:text-base">{formatCurrency(repair.cost)}</span>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setEditingRepair(repair)} className="h-7 w-7 p-0">
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteRepair(repair.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -145,9 +222,17 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
             </div>
             <div className="space-y-2">
               {car.expenses?.filter((e: any) => e.category === 'REPAIR').map((exp: any) => (
-                <div key={exp.id} className="flex flex-col sm:flex-row justify-between p-2 bg-gray-50 rounded gap-1 text-sm">
-                  <span>{exp.type}: {exp.description || '-'}</span>
-                  <span className="font-medium">${exp.amount}</span>
+                <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
+                  <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
+                  <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -174,9 +259,17 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
                 </div>
                 <div className="space-y-2">
                   {car.expenses?.filter((e: any) => e.category === 'SALE').map((exp: any) => (
-                    <div key={exp.id} className="flex flex-col sm:flex-row justify-between p-2 bg-gray-50 rounded gap-1 text-sm">
-                      <span>{exp.type}: {exp.description || '-'}</span>
-                      <span className="font-medium">${exp.amount}</span>
+                    <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
+                      <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
+                      <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -273,6 +366,22 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
       
       <Modal isOpen={modal === 'sale'} onClose={() => setModal(null)} title="Record Sale">
         <SaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} netRate={car.netRate} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+      </Modal>
+      
+      <Modal isOpen={modal === 'edit'} onClose={() => setModal(null)} title="Edit Car Details">
+        <EditCarForm car={car} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+      </Modal>
+      
+      <Modal isOpen={!!editingExpense} onClose={() => setEditingExpense(null)} title="Edit Expense">
+        {editingExpense && (
+          <EditExpenseForm expense={editingExpense} onSuccess={handleExpenseEditSuccess} onCancel={() => setEditingExpense(null)} />
+        )}
+      </Modal>
+      
+      <Modal isOpen={!!editingRepair} onClose={() => setEditingRepair(null)} title="Edit Repair">
+        {editingRepair && (
+          <EditRepairForm repair={editingRepair} onSuccess={handleRepairEditSuccess} onCancel={() => setEditingRepair(null)} />
+        )}
       </Modal>
     </div>
   )
