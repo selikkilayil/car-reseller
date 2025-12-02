@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server'
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: bankAccountId } = await params
     const { amount, description } = await req.json()
-    const bankAccountId = params.id
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
