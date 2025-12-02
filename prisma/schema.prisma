@@ -72,6 +72,7 @@ model Party {
 
   carsPurchasedFrom Car[]       @relation("PurchaseParty")
   carsBrokered      Car[]       @relation("PurchaseBroker")
+  carsBooked        Car[]       @relation("BookingParty")
   carsSoldTo        Car[]       @relation("SaleParty")
   salesBrokered     Car[]       @relation("SaleBroker")
 }
@@ -89,7 +90,7 @@ model Car {
   color           String?
   mileage         Int?
   
-  // Status: PURCHASED, IN_REPAIR, READY_FOR_SALE, SOLD, DELIVERED
+  // Status: PURCHASED, IN_REPAIR, READY_FOR_SALE, BOOKED, SOLD, DELIVERED
   status          String   @default("PURCHASED")
   
   // Purchase details
@@ -113,6 +114,14 @@ model Car {
   // Sale details (filled when sold)
   readyForSaleDate DateTime?  // When marked ready for sale
   netRate         Float?      // Base rate (set when ready for sale)
+  
+  // Booking details (optional - when car is booked before final sale)
+  isBooked        Boolean   @default(false)
+  bookingAmount   Float?
+  bookingDate     DateTime?
+  bookingPartyId  String?
+  bookingParty    Party?    @relation("BookingParty", fields: [bookingPartyId], references: [id])
+  
   saleDate        DateTime?
   salePrice       Float?      // Final price
   salePartyId     String?

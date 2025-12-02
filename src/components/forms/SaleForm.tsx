@@ -15,11 +15,12 @@ interface Props {
   carId: string
   totalCost: number
   netRate?: number
+  bookingAmount?: number
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function SaleForm({ carId, totalCost, netRate, onSuccess, onCancel }: Props) {
+export function SaleForm({ carId, totalCost, netRate, bookingAmount = 0, onSuccess, onCancel }: Props) {
   const { data: parties } = useFetch<Party[]>('/api/parties')
   const { data: banks } = useFetch<BankAccount[]>('/api/bank-accounts')
   
@@ -34,6 +35,7 @@ export function SaleForm({ carId, totalCost, netRate, onSuccess, onCancel }: Pro
   const buyers = parties?.filter(p => p.type === 'BUYER') || []
   const brokers = parties?.filter(p => p.type === 'BROKER') || []
   const estimatedProfit = salePrice ? salePrice - totalCost : 0
+  const remainingAmount = salePrice ? salePrice - bookingAmount : 0
 
   const onSubmit = async (data: SaleInput) => {
     await postData(`/api/cars/${carId}/sale`, data)
@@ -42,6 +44,13 @@ export function SaleForm({ carId, totalCost, netRate, onSuccess, onCancel }: Pro
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {bookingAmount > 0 && (
+        <div className="p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm space-y-1">
+          <p className="text-yellow-900 font-medium">Booking Amount Received: <span className="font-bold">{formatCurrency(bookingAmount)}</span></p>
+          <p className="text-yellow-900">Remaining to Collect: <span className="font-bold">{formatCurrency(remainingAmount)}</span></p>
+        </div>
+      )}
+      
       <div className="p-3 sm:p-4 bg-blue-50 rounded-lg text-sm space-y-1">
         <p className="text-blue-800">Total Cost: <span className="font-bold">{formatCurrency(totalCost)}</span></p>
         {netRate && <p className="text-blue-800">Net Rate: <span className="font-bold">{formatCurrency(netRate)}</span></p>}

@@ -9,6 +9,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   
   const { paymentMethod, bankAccountId, bankAmount, cashAmount, carId, ...saleData } = data
   
+  // Get current car to check if it's booked
+  const currentCar = await prisma.car.findUnique({ where: { id } })
+  const bookingAmount = currentCar?.isBooked ? currentCar.bookingAmount || 0 : 0
+  const remainingAmount = saleData.salePrice - bookingAmount
+  
   // Update car with sale info
   const car = await prisma.car.update({
     where: { id },
@@ -19,22 +24,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
   
-  // Record incoming payment
+  // Record incoming payment (remaining amount after booking)
+  const paymentAmount = remainingAmount > 0 ? remainingAmount : saleData.salePrice
+  const paymentDescription = bookingAmount > 0 
+    ? `Sale of car (Remaining: ${remainingAmount}, Booking: ${bookingAmount})`
+    : `Sale of car`
+  
   if (paymentMethod === 'BANK' && bankAccountId) {
     await prisma.$transaction([
       prisma.transaction.create({
         data: {
-          amount: saleData.salePrice,
+          amount: paymentAmount,
           type: 'CREDIT',
           purpose: 'SALE',
-          description: `Sale of car`,
+          description: paymentDescription,
           bankAccountId,
           carId: id,
         },
       }),
       prisma.bankAccount.update({
         where: { id: bankAccountId },
-        data: { balance: { increment: saleData.salePrice } },
+        data: { balance: { increment: paymentAmount } },
       }),
     ])
   } else if (paymentMethod === 'CASH') {
@@ -43,17 +53,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await prisma.$transaction([
         prisma.transaction.create({
           data: {
-            amount: saleData.salePrice,
+            amount: paymentAmount,
             type: 'CREDIT',
             purpose: 'SALE',
-            description: `Sale of car`,
+            description: paymentDescription,
             cashAccountId: cashAccount.id,
             carId: id,
           },
         }),
         prisma.cashAccount.update({
           where: { id: cashAccount.id },
-          data: { balance: { increment: saleData.salePrice } },
+          data: { balance: { increment: paymentAmount } },
         }),
       ])
     }

@@ -11,6 +11,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     include: {
       purchaseParty: true,
       purchaseBroker: true,
+      bookingParty: true,
       saleParty: true,
       saleBroker: true,
       repairs: { include: { repairType: true } },
@@ -39,7 +40,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   
   // Calculate repair days if car went through repair
   let repairDays = null
-  if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'SOLD' || car.status === 'DELIVERED') {
+  if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'BOOKED' || car.status === 'SOLD' || car.status === 'DELIVERED') {
     const firstRepair = car.repairs.sort((a, b) => 
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     )[0]
@@ -101,6 +102,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       include: {
         purchaseParty: true,
         purchaseBroker: true,
+        bookingParty: true,
         saleParty: true,
         saleBroker: true,
         repairs: { include: { repairType: true } },
@@ -123,7 +125,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     )
     
     let repairDays = null
-    if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'SOLD' || car.status === 'DELIVERED') {
+    if (car.status === 'IN_REPAIR' || car.status === 'READY_FOR_SALE' || car.status === 'BOOKED' || car.status === 'SOLD' || car.status === 'DELIVERED') {
       const firstRepair = car.repairs.sort((a, b) => 
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       )[0]

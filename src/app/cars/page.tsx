@@ -30,6 +30,7 @@ const statusVariants: Record<string, 'default' | 'warning' | 'info' | 'success'>
   PURCHASED: 'default',
   IN_REPAIR: 'warning',
   READY_FOR_SALE: 'info',
+  BOOKED: 'warning',
   SOLD: 'success',
   DELIVERED: 'success',
 }
@@ -58,6 +59,7 @@ export default function CarsPage() {
         <Button variant={filter === 'PURCHASED' ? 'primary' : 'secondary'} size="sm" onClick={() => setFilter('PURCHASED')} className="whitespace-nowrap">Purchased</Button>
         <Button variant={filter === 'IN_REPAIR' ? 'primary' : 'secondary'} size="sm" onClick={() => setFilter('IN_REPAIR')} className="whitespace-nowrap">In Repair</Button>
         <Button variant={filter === 'READY_FOR_SALE' ? 'primary' : 'secondary'} size="sm" onClick={() => setFilter('READY_FOR_SALE')} className="whitespace-nowrap">Ready for Sale</Button>
+        <Button variant={filter === 'BOOKED' ? 'primary' : 'secondary'} size="sm" onClick={() => setFilter('BOOKED')} className="whitespace-nowrap">Booked</Button>
         <Button variant={filter === 'SOLD' ? 'primary' : 'secondary'} size="sm" onClick={() => setFilter('SOLD')} className="whitespace-nowrap">Sold</Button>
       </div>
 

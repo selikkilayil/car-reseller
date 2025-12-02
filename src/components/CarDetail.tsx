@@ -9,11 +9,12 @@ import { RepairForm } from '@/components/forms/RepairForm'
 import { ExpenseForm } from '@/components/forms/ExpenseForm'
 import { SaleForm } from '@/components/forms/SaleForm'
 import { ReadyForSaleForm } from '@/components/forms/ReadyForSaleForm'
+import { BookingForm } from '@/components/forms/BookingForm'
 import { EditCarForm } from '@/components/forms/EditCarForm'
 import { EditExpenseForm } from '@/components/forms/EditExpenseForm'
 import { EditRepairForm } from '@/components/forms/EditRepairForm'
 import { patchData, deleteData } from '@/hooks/useData'
-import { Plus, Wrench, DollarSign, ShoppingCart, Truck, Edit, Trash2, Pencil } from 'lucide-react'
+import { Plus, Wrench, DollarSign, ShoppingCart, Truck, Edit, Trash2, Pencil, BookmarkCheck, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface CarDetailProps {
@@ -25,13 +26,14 @@ const statusColors: Record<string, 'default' | 'warning' | 'info' | 'success' | 
   PURCHASED: 'default',
   IN_REPAIR: 'warning',
   READY_FOR_SALE: 'info',
+  BOOKED: 'warning',
   SOLD: 'success',
   DELIVERED: 'success',
 }
 
 export function CarDetail({ car, onUpdate }: CarDetailProps) {
   const router = useRouter()
-  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | 'edit' | null>(null)
+  const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | 'booking' | 'edit' | null>(null)
   const [editingExpense, setEditingExpense] = useState<any>(null)
   const [editingRepair, setEditingRepair] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('purchase')
@@ -89,6 +91,17 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
     onUpdate()
   }
 
+  const handleCancelBooking = async () => {
+    if (confirm('Are you sure you want to cancel this booking? The booking amount will be refunded.')) {
+      try {
+        await deleteData(`/api/cars/${car.id}/booking`)
+        onUpdate()
+      } catch (error) {
+        alert('Failed to cancel booking')
+      }
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 sm:p-6 border-b">
@@ -126,9 +139,24 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
             </Button>
           )}
           {car.status === 'READY_FOR_SALE' && (
-            <Button size="sm" onClick={() => setModal('sale')} className="flex-1 sm:flex-none">
-              <DollarSign className="w-4 h-4 mr-1" /> Record Sale
-            </Button>
+            <>
+              <Button size="sm" onClick={() => setModal('booking')} className="flex-1 sm:flex-none" variant="secondary">
+                <BookmarkCheck className="w-4 h-4 mr-1" /> Book Car
+              </Button>
+              <Button size="sm" onClick={() => setModal('sale')} className="flex-1 sm:flex-none">
+                <DollarSign className="w-4 h-4 mr-1" /> Record Sale
+              </Button>
+            </>
+          )}
+          {car.status === 'BOOKED' && (
+            <>
+              <Button size="sm" onClick={() => setModal('sale')} className="flex-1 sm:flex-none">
+                <DollarSign className="w-4 h-4 mr-1" /> Complete Sale
+              </Button>
+              <Button size="sm" onClick={handleCancelBooking} className="flex-1 sm:flex-none" variant="danger">
+                <XCircle className="w-4 h-4 mr-1" /> Cancel Booking
+              </Button>
+            </>
           )}
           {car.status === 'SOLD' && (
             <Button size="sm" onClick={() => updateStatus('DELIVERED')} className="flex-1 sm:flex-none">
@@ -262,6 +290,16 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
         </TabsContent>
 
         <TabsContent value="sale">
+          {car.isBooked && (
+            <div className="mb-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="font-medium text-yellow-900 mb-2">Booking Details</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Booking Amount:</span> <span className="font-medium">{formatCurrency(car.bookingAmount)}</span></div>
+                <div><span className="text-gray-600">Booked By:</span> <span className="font-medium">{car.bookingParty?.name}</span></div>
+                <div><span className="text-gray-600">Booking Date:</span> <span className="font-medium">{car.bookingDate ? new Date(car.bookingDate).toLocaleDateString() : '-'}</span></div>
+              </div>
+            </div>
+          )}
           {car.salePrice ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm sm:text-base">
@@ -304,6 +342,8 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
                 </div>
               </div>
             </div>
+          ) : car.isBooked ? (
+            <p className="text-gray-500 text-sm sm:text-base">Car is booked but not sold yet</p>
           ) : (
             <p className="text-gray-500 text-sm sm:text-base">Car not sold yet</p>
           )}
@@ -393,8 +433,19 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
         <ReadyForSaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
       </Modal>
       
+      <Modal isOpen={modal === 'booking'} onClose={() => setModal(null)} title="Book Car">
+        <BookingForm carId={car.id} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+      </Modal>
+      
       <Modal isOpen={modal === 'sale'} onClose={() => setModal(null)} title="Record Sale">
-        <SaleForm carId={car.id} totalCost={car.summary?.totalCost || 0} netRate={car.netRate} onSuccess={handleFormSuccess} onCancel={() => setModal(null)} />
+        <SaleForm 
+          carId={car.id} 
+          totalCost={car.summary?.totalCost || 0} 
+          netRate={car.netRate} 
+          bookingAmount={car.isBooked ? car.bookingAmount : 0}
+          onSuccess={handleFormSuccess} 
+          onCancel={() => setModal(null)} 
+        />
       </Modal>
       
       <Modal isOpen={modal === 'edit'} onClose={() => setModal(null)} title="Edit Car Details">

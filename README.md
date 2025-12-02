@@ -7,8 +7,9 @@ A comprehensive system for managing car reselling business operations including 
 ### 🚗 Car Lifecycle Management
 - **Purchase**: Record car purchases from direct users or dealerships
 - **Repair**: Track repairs by type (bodywork, electric, painting, spares, etc.)
+- **Booking**: Accept booking amounts from buyers before final sale
 - **Sale**: Manage sales with profit calculations
-- **Status Tracking**: PURCHASED → IN_REPAIR → READY_FOR_SALE → SOLD → DELIVERED
+- **Status Tracking**: PURCHASED → IN_REPAIR → READY_FOR_SALE → BOOKED → SOLD → DELIVERED
 
 ### 💰 Financial Tracking
 - Multiple bank account management
@@ -116,14 +117,23 @@ The application will be available at `http://localhost:3000`
 1. When repairs complete, click "Mark Ready for Sale"
 2. Car status updates to READY_FOR_SALE
 
-### 6. Record Sale
-1. Click "Record Sale" on ready cars
+### 6. Book a Car (Optional)
+1. Click "Book Car" on ready-for-sale cars
+2. Enter booking amount and select buyer
+3. Choose payment method (Bank/Cash)
+4. Booking amount is recorded as advance payment
+5. Car status updates to BOOKED
+
+### 7. Record Sale
+1. Click "Record Sale" (or "Complete Sale" for booked cars)
 2. Enter net rate and sale price
 3. System shows total cost and estimated profit
-4. Select buyer and payment method
-5. Add sale expenses (delivery, etc.)
+4. For booked cars, system shows booking amount already received
+5. Collect remaining amount from buyer
+6. Select buyer and payment method
+7. Add sale expenses (delivery, etc.)
 
-### 7. Track Finances
+### 8. Track Finances
 - Dashboard shows total bank and cash balances
 - Each transaction updates account balances
 - View complete transaction history per car
@@ -133,6 +143,8 @@ The application will be available at `http://localhost:3000`
 - `GET/POST /api/cars` - List/create cars
 - `GET /api/cars/[id]` - Get car details with summary
 - `PATCH /api/cars/[id]/status` - Update car status
+- `POST /api/cars/[id]/booking` - Book a car with advance payment
+- `DELETE /api/cars/[id]/booking` - Cancel booking
 - `POST /api/cars/[id]/sale` - Record sale
 - `GET/POST /api/parties` - Manage parties
 - `GET/POST /api/bank-accounts` - Manage bank accounts
