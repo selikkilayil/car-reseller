@@ -1,7 +1,10 @@
 'use client'
 import { useFetch } from '@/hooks/useData'
 import { formatCurrency } from '@/lib/currency'
-import { Car, DollarSign, Wrench, ShoppingCart } from 'lucide-react'
+import { 
+  Car, DollarSign, Wrench, ShoppingCart, TrendingUp, TrendingDown, 
+  Wallet, Package, Calendar, BarChart3, ArrowUpRight, ArrowDownRight 
+} from 'lucide-react'
 import Link from 'next/link'
 
 interface CarData {
@@ -13,20 +16,55 @@ interface CarData {
   salePrice?: number
 }
 
+interface DashboardStats {
+  overview: {
+    totalCars: number
+    purchased: number
+    inRepair: number
+    readyForSale: number
+    sold: number
+  }
+  thisMonth: {
+    carsPurchased: number
+    carsSold: number
+    revenue: number
+    profit: number
+  }
+  lastMonth: {
+    carsSold: number
+    revenue: number
+  }
+  financial: {
+    totalInvestment: number
+    totalRevenue: number
+    totalProfit: number
+    inventoryValue: number
+    totalLiquidity: number
+    totalBankBalance: number
+    totalCash: number
+  }
+  averages: {
+    purchasePrice: number
+    salePrice: number
+    profit: number
+  }
+}
+
 export default function Dashboard() {
-  const { data: cars, loading } = useFetch<CarData[]>('/api/cars')
-  const { data: cashAccount } = useFetch<{ balance: number }>('/api/cash-account')
-  const { data: bankAccounts } = useFetch<{ balance: number }[]>('/api/bank-accounts')
+  const { data: cars, loading: carsLoading } = useFetch<CarData[]>('/api/cars')
+  const { data: stats, loading: statsLoading } = useFetch<DashboardStats>('/api/dashboard/stats')
+
+  const loading = carsLoading || statsLoading
 
   if (loading) return <div className="text-center py-12 text-slate-600">Loading...</div>
 
-  const purchased = cars?.filter(c => c.status === 'PURCHASED').length || 0
-  const inRepair = cars?.filter(c => c.status === 'IN_REPAIR').length || 0
-  const readyForSale = cars?.filter(c => c.status === 'READY_FOR_SALE').length || 0
-  const sold = cars?.filter(c => c.status === 'SOLD' || c.status === 'DELIVERED').length || 0
+  const revenueChange = stats?.lastMonth.revenue 
+    ? ((stats.thisMonth.revenue - stats.lastMonth.revenue) / stats.lastMonth.revenue) * 100 
+    : 0
   
-  const totalBankBalance = bankAccounts?.reduce((sum, acc) => sum + acc.balance, 0) || 0
-  const totalCash = cashAccount?.balance || 0
+  const salesChange = stats?.lastMonth.carsSold 
+    ? ((stats.thisMonth.carsSold - stats.lastMonth.carsSold) / stats.lastMonth.carsSold) * 100 
+    : 0
 
   return (
     <div>
@@ -34,22 +72,86 @@ export default function Dashboard() {
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Dashboard</h1>
         <p className="text-slate-600 mt-1 text-sm sm:text-base">Overview of your car reselling business</p>
       </div>
+
+      {/* This Month Highlights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <MetricCard
+          icon={Calendar}
+          label="Cars Purchased This Month"
+          value={stats?.thisMonth.carsPurchased || 0}
+          color="blue"
+        />
+        <MetricCard
+          icon={DollarSign}
+          label="Sales This Month"
+          value={stats?.thisMonth.carsSold || 0}
+          trend={salesChange}
+          color="green"
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label="Revenue This Month"
+          value={formatCurrency(stats?.thisMonth.revenue || 0)}
+          trend={revenueChange}
+          color="purple"
+        />
+        <MetricCard
+          icon={BarChart3}
+          label="Profit This Month"
+          value={formatCurrency(stats?.thisMonth.profit || 0)}
+          color="emerald"
+        />
+      </div>
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-        <StatCard icon={Car} label="Purchased" value={purchased} color="blue" />
-        <StatCard icon={Wrench} label="In Repair" value={inRepair} color="yellow" />
-        <StatCard icon={ShoppingCart} label="Ready for Sale" value={readyForSale} color="purple" />
-        <StatCard icon={DollarSign} label="Sold" value={sold} color="green" />
+      {/* Inventory Status */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <StatCard icon={Car} label="Purchased" value={stats?.overview.purchased || 0} color="blue" />
+        <StatCard icon={Wrench} label="In Repair" value={stats?.overview.inRepair || 0} color="yellow" />
+        <StatCard icon={ShoppingCart} label="Ready for Sale" value={stats?.overview.readyForSale || 0} color="purple" />
+        <StatCard icon={DollarSign} label="Sold" value={stats?.overview.sold || 0} color="green" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      {/* Financial Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg shadow-blue-500/20 p-5 sm:p-6 text-white">
-          <h3 className="text-xs sm:text-sm font-medium opacity-90 mb-2">Total Bank Balance</h3>
-          <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{formatCurrency(totalBankBalance)}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <Wallet className="w-5 h-5 opacity-90" />
+            <h3 className="text-xs sm:text-sm font-medium opacity-90">Total Liquidity</h3>
+          </div>
+          <p className="text-2xl sm:text-3xl font-bold mb-1">{formatCurrency(stats?.financial.totalLiquidity || 0)}</p>
+          <p className="text-xs opacity-75">Bank: {formatCurrency(stats?.financial.totalBankBalance || 0)} | Cash: {formatCurrency(stats?.financial.totalCash || 0)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg shadow-purple-500/20 p-5 sm:p-6 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-5 h-5 opacity-90" />
+            <h3 className="text-xs sm:text-sm font-medium opacity-90">Inventory Value</h3>
+          </div>
+          <p className="text-2xl sm:text-3xl font-bold mb-1">{formatCurrency(stats?.financial.inventoryValue || 0)}</p>
+          <p className="text-xs opacity-75">{stats?.overview.totalCars || 0} cars in inventory</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 p-5 sm:p-6 text-white">
-          <h3 className="text-xs sm:text-sm font-medium opacity-90 mb-2">Cash on Hand</h3>
-          <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{formatCurrency(totalCash)}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-5 h-5 opacity-90" />
+            <h3 className="text-xs sm:text-sm font-medium opacity-90">Total Profit</h3>
+          </div>
+          <p className="text-2xl sm:text-3xl font-bold mb-1">{formatCurrency(stats?.financial.totalProfit || 0)}</p>
+          <p className="text-xs opacity-75">From {stats?.overview.sold || 0} sold cars</p>
+        </div>
+      </div>
+
+      {/* Averages */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <h3 className="text-sm font-medium text-slate-600 mb-2">Avg Purchase Price</h3>
+          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats?.averages.purchasePrice || 0)}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <h3 className="text-sm font-medium text-slate-600 mb-2">Avg Sale Price</h3>
+          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats?.averages.salePrice || 0)}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <h3 className="text-sm font-medium text-slate-600 mb-2">Avg Profit per Car</h3>
+          <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats?.averages.profit || 0)}</p>
         </div>
       </div>
 
@@ -84,6 +186,45 @@ export default function Dashboard() {
   )
 }
 
+function MetricCard({ 
+  icon: Icon, 
+  label, 
+  value, 
+  trend, 
+  color 
+}: { 
+  icon: any
+  label: string
+  value: string | number
+  trend?: number
+  color: string 
+}) {
+  const colors: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-emerald-50 text-emerald-600',
+    purple: 'bg-purple-50 text-purple-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+  }
+  
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-10 h-10 rounded-lg ${colors[color]} flex items-center justify-center`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 text-xs font-semibold ${trend >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            {trend >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+            {Math.abs(trend).toFixed(1)}%
+          </div>
+        )}
+      </div>
+      <p className="text-slate-600 text-xs font-medium mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
+    </div>
+  )
+}
+
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
   const colors: Record<string, string> = {
     blue: 'bg-blue-50 text-blue-600 shadow-blue-500/10',
@@ -93,12 +234,12 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
   }
   
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
-      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${colors[color]} flex items-center justify-center mb-3 sm:mb-4 shadow-lg`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow">
+      <div className={`w-10 h-10 rounded-lg ${colors[color]} flex items-center justify-center mb-3 shadow-lg`}>
+        <Icon className="w-5 h-5" />
       </div>
-      <p className="text-slate-600 text-xs sm:text-sm font-medium mb-1">{label}</p>
-      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">{value}</p>
+      <p className="text-slate-600 text-xs font-medium mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
     </div>
   )
 }
