@@ -34,7 +34,6 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
   const [modal, setModal] = useState<'repair' | 'expense-purchase' | 'expense-repair' | 'expense-sale' | 'sale' | 'ready-for-sale' | 'edit' | null>(null)
   const [editingExpense, setEditingExpense] = useState<any>(null)
   const [editingRepair, setEditingRepair] = useState<any>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const updateStatus = async (status: string) => {
     await patchData(`/api/cars/${car.id}/status`, { status })
@@ -92,19 +91,25 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 sm:p-6 border-b">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold">{car.make} {car.model} ({car.year})</h2>
-            <p className="text-gray-500 text-sm sm:text-base">{car.registrationNo || car.vin || 'No ID'}</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <h2 className="text-xl sm:text-2xl font-bold">{car.make} {car.model} ({car.year})</h2>
+              <p className="text-gray-500 text-sm sm:text-base">{car.registrationNo || car.vin || 'No ID'}</p>
+            </div>
+            <div className="shrink-0">
+              <Badge variant={statusColors[car.status]}>{car.status.replace('_', ' ')}</Badge>
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setModal('edit')}>
-              <Edit className="w-4 h-4" />
+            <Button size="sm" variant="secondary" onClick={() => setModal('edit')} className="flex-1 sm:flex-none h-9">
+              <Edit className="w-4 h-4 sm:mr-1" />
+              <span className="ml-1">Edit Car</span>
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-              <Trash2 className="w-4 h-4" />
+            <Button size="sm" variant="danger" onClick={handleDelete} className="flex-1 sm:flex-none h-9">
+              <Trash2 className="w-4 h-4 sm:mr-1" />
+              <span className="ml-1">Delete</span>
             </Button>
-            <Badge variant={statusColors[car.status]}>{car.status.replace('_', ' ')}</Badge>
           </div>
         </div>
         
@@ -165,16 +170,23 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
               </div>
               <div className="space-y-2">
                 {car.expenses?.filter((e: any) => e.category === 'PURCHASE').map((exp: any) => (
-                  <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
-                    <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
-                    <span className="font-medium">{formatCurrency(exp.amount)}</span>
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                  <div key={exp.id} className="flex flex-col sm:flex-row justify-between items-start p-2 bg-gray-50 rounded gap-2 text-sm">
+                    <div className="flex-1">
+                      <span className="font-medium">{exp.type}</span>
+                      <span className="text-gray-600">: {exp.description || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                      <div className="flex gap-2 flex-1 sm:flex-none">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2">
+                          <Pencil className="w-3 h-3 sm:mr-1" />
+                          <span className="text-xs sm:inline">Edit</span>
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2 text-red-600 hover:text-red-700">
+                          <Trash2 className="w-3 h-3 sm:mr-1" />
+                          <span className="text-xs sm:inline">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -192,20 +204,22 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
           </div>
           <div className="space-y-2">
             {car.repairs?.map((repair: any) => (
-              <div key={repair.id} className="flex justify-between items-start p-3 bg-gray-50 rounded gap-2">
+              <div key={repair.id} className="flex flex-col sm:flex-row justify-between items-start p-3 bg-gray-50 rounded gap-2">
                 <div className="flex-1 text-sm sm:text-base">
                   <span className="font-medium">{repair.repairType?.name}</span>
                   {repair.description && <p className="text-xs sm:text-sm text-gray-500">{repair.description}</p>}
                   {repair.vendorName && <p className="text-xs sm:text-sm text-gray-500">Vendor: {repair.vendorName}</p>}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
                   <span className="font-medium text-sm sm:text-base">{formatCurrency(repair.cost)}</span>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setEditingRepair(repair)} className="h-7 w-7 p-0">
-                      <Pencil className="w-3 h-3" />
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button size="sm" variant="ghost" onClick={() => setEditingRepair(repair)} className="h-9 flex-1 sm:flex-none sm:w-auto px-3">
+                      <Pencil className="w-4 h-4 sm:mr-1" />
+                      <span className="sm:inline">Edit</span>
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDeleteRepair(repair.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
-                      <Trash2 className="w-3 h-3" />
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteRepair(repair.id)} className="h-9 flex-1 sm:flex-none sm:w-auto px-3 text-red-600 hover:text-red-700">
+                      <Trash2 className="w-4 h-4 sm:mr-1" />
+                      <span className="sm:inline">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -222,16 +236,23 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
             </div>
             <div className="space-y-2">
               {car.expenses?.filter((e: any) => e.category === 'REPAIR').map((exp: any) => (
-                <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
-                  <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
-                  <span className="font-medium">{formatCurrency(exp.amount)}</span>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
-                      <Pencil className="w-3 h-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                <div key={exp.id} className="flex flex-col sm:flex-row justify-between items-start p-2 bg-gray-50 rounded gap-2 text-sm">
+                  <div className="flex-1">
+                    <span className="font-medium">{exp.type}</span>
+                    <span className="text-gray-600">: {exp.description || '-'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                    <div className="flex gap-2 flex-1 sm:flex-none">
+                      <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2">
+                        <Pencil className="w-3 h-3 sm:mr-1" />
+                        <span className="text-xs sm:inline">Edit</span>
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2 text-red-600 hover:text-red-700">
+                        <Trash2 className="w-3 h-3 sm:mr-1" />
+                        <span className="text-xs sm:inline">Delete</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -259,16 +280,23 @@ export function CarDetail({ car, onUpdate }: CarDetailProps) {
                 </div>
                 <div className="space-y-2">
                   {car.expenses?.filter((e: any) => e.category === 'SALE').map((exp: any) => (
-                    <div key={exp.id} className="flex justify-between items-center p-2 bg-gray-50 rounded gap-2 text-sm">
-                      <span className="flex-1">{exp.type}: {exp.description || '-'}</span>
-                      <span className="font-medium">{formatCurrency(exp.amount)}</span>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-7 w-7 p-0">
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                    <div key={exp.id} className="flex flex-col sm:flex-row justify-between items-start p-2 bg-gray-50 rounded gap-2 text-sm">
+                      <div className="flex-1">
+                        <span className="font-medium">{exp.type}</span>
+                        <span className="text-gray-600">: {exp.description || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="font-medium">{formatCurrency(exp.amount)}</span>
+                        <div className="flex gap-2 flex-1 sm:flex-none">
+                          <Button size="sm" variant="ghost" onClick={() => setEditingExpense(exp)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2">
+                            <Pencil className="w-3 h-3 sm:mr-1" />
+                            <span className="text-xs sm:inline">Edit</span>
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDeleteExpense(exp.id)} className="h-8 flex-1 sm:flex-none sm:w-auto px-2 text-red-600 hover:text-red-700">
+                            <Trash2 className="w-3 h-3 sm:mr-1" />
+                            <span className="text-xs sm:inline">Delete</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
